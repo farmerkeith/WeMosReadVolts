@@ -1,0 +1,30 @@
+Diary for WeMosReadVolts project
+30 Oct 2017 
+Basic sketch is working without calibration functions. 
+I set it running overnight, this morning it had crashed doe to watchdog timer, not clear why. 
+The tail end of the serial output is in serial01.txt which includes the statistics and the wdt reports. 
+I had troubles with the WeMos pins outputting either 0 or Vcc even when they were set to INPUT. 
+Eventually I found I could use pins D7 and D2 as inputs. 
+At least some of the other pins, like the original D8, output Ground even when defined as INPUT.
+The schematic is at SchematicWeMosReadVolts.pdf.
+The results file (serial01.txt) also has some curious results I don't understand.  
+There were 73,200 measurements before the watchdog timer stopped the sketch. 
+
+The raw ADC values are around 1251 (that is the most frequent) which is more than 1023 which is the maximum value for a 10-bit ADC. Also, the raw number distribution does not use every value, but every 3rd or 4th value. It suggests that the raw ADC output from the ESP8266 is being multiplied by a factor between 3 and 4 (closer to 3 than 4, and possibly 3.3 (ratio of nominal Vcc to internal ADC reference) or 3.2 (nominal voltage divider ratio). This needs more investigation. 
+
+The distribution is:
+Peak count 54,781 (74.84% of total) for raw value 1251
+Readings above peak count 1113 (1.52% of total) for raw value 1254 (one value only)
+Readings below peak count (mainly at 5 values as follows):
+count 8207 (11.21% of total) for raw value 1248
+count 7810 (10.67% of total) for raw value 1244
+count 1030 (1.41% of total) for raw value 1241
+count  210 (0.29% of total) for raw value 1238
+count   43 (0.06% of total) for raw value 1235
+There are 6 scattered readings at values below 1235.
+
+This is a skewed (non-Gaussian) distribution. My interpretation is that there is a contribution from noise (eg thermal noise), but there may well be another process going on that makes the readings vary, skewing the distribution towards slightly lower values..
+
+
+
+

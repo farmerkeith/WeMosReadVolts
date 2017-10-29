@@ -7,9 +7,15 @@
 // to get full scale of 5.9 V put a 270K resistor in series with A0. 
 // this is an example sketch to calibrate and read voltages
 
-#include "WeMosReadVolts.h"
+#include "WeMosReadVolts.h" // associated tab file
+#include "farmerkeith_LED.h" // tab file
 
 const int fullScale = 6230; // mV
+const byte calibrateZeroPin  = 13; // D7
+const byte calibrateScalePin = 4; // D2
+const byte redVPin = 14; // set pin D5/GPIO14 for the red LED to Vcc
+const byte greenGPin = 12; // set pin D6/GPIO12 for the green LED to Ground
+
 int baseVoltage = 0; // mV, base for stats collection
 int baseMeasureTime = 0; // mV, base for stats collection
 const int arraySize = 100; // 32; // size of arrays for stats collection
@@ -28,10 +34,22 @@ unsigned long measureTime, taskTime=0;
 int mCount=0;
 
 WeMosVolts wmv;
+LED ledV(redVPin, 1); // Vcc behind red LED
+LED ledG(greenGPin, 0); // Ground behind green LED
+// LED ledV(calibrateScalePin, 1); // Vcc behind red LED
+
 
 void setup() {
   Serial.begin(115200);
   Serial.println("\n WeMosReadVoltsTest");
+  pinMode(calibrateZeroPin,INPUT);
+  pinMode(calibrateScalePin,INPUT); // D2
+//  pinMode(15,INPUT); // GPIO 15 is D8
+//  pinMode(5,INPUT); // GPIO 5 is D1
+//  pinMode(4,INPUT); // GPIO 4 is D2
+//  pinMode(0,INPUT); // GPIO 0 is D3
+//  pinMode(2,INPUT); // GPIO 2 is D4
+
   for (int i=0; i<arraySize; i++){
     value[i]=0;
     mValue[i] =0;
@@ -42,6 +60,8 @@ void setup() {
 //    Serial.print("Setup raw voltage reading ");
 //    Serial.println(tempVoltage);
     delay(50);
+//    ledG.blink(200,10);
+
   }
   
   baseVoltage = baseVoltage/arraySize;
@@ -61,6 +81,7 @@ void setup() {
   }
   Serial.print("taskTime set to ");
   Serial.println(taskTime);
+  ledG.on();
 }
 
 void loop() {
@@ -99,16 +120,23 @@ void loop() {
 //  Serial.print (loHiBreak/100);
 //  Serial.print (" loHiBreak1 ");
 //  Serial.print (loHiBreak1/10);
-    Serial.print (" raw-Break ");
-    Serial.print (rawVoltage - loHiBreak/100);
-    Serial.print (" lowMean ");
-    Serial.print ((float)lowMean/100);
-    Serial.print (" highMean ");
-    Serial.print ((float)highMean/100);
-    Serial.print (" lowV ");
-    Serial.print ((float)lowVoltage/1000,3);
+//    Serial.print (" raw-Break ");
+//    Serial.print (rawVoltage - loHiBreak/100);
+//    Serial.print (" lowMean ");
+//    Serial.print ((float)lowMean/100);
+//    Serial.print (" highMean ");
+//    Serial.print ((float)highMean/100);
+//    Serial.print (" lowV ");
+//    Serial.print ((float)lowVoltage/1000,3);
+    Serial.print (" ZeroPin=");
+    Serial.print (digitalRead(calibrateZeroPin));
+    Serial.print (" ScalePin=");
+    Serial.print (digitalRead(calibrateScalePin));
     Serial.print (" highV ");
     Serial.println ((float)highVoltage/1000,3);
+
+    ledV.toggle();
+    ledG.toggle();
 
     collectStats();
     
