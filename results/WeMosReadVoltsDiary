@@ -25,6 +25,54 @@ There are 6 scattered readings at values below 1235.
 
 This is a skewed (non-Gaussian) distribution. My interpretation is that there is a contribution from noise (eg thermal noise), but there may well be another process going on that makes the readings vary, skewing the distribution towards slightly lower values..
 
+30 October 2017 (pm)
+Looking at my software more carefully, I realise that it was scaling the ADC readings before
+printing them, so that explains the gaps between readings and the scale going beyond 1023. 
+I adjusted the software to print actual ADC readings, and now they run from 4 (at zero volts on A0)
+to 1024 (at 3.38 volts on A0). 
+I am running a series of tests and recording the statistics in a text file Serial03.txt
+which I plan to analyse to check the linearity of the outputs and determine the best 
+algorithm to translate from the ADC value to the A0 pin voltage.
+
+I am also running some tests to give some insight into the role of oversampling to give
+higher resolution (eg will 100 readings give a more accurate result than 10 readings? and
+should the average be used, or something else?)
+
+Doing a Google search for "wemos d1 mini analogRead" came up with other people having 
+problems with WeMos analog read. The main one of interest was at 
+https://forum.micropython.org/viewtopic.php?t=2642 and titled 
+"3.3 V range on the A0 analog input of Wemos D1 mini" has discussion about voltages on 
+WeMos pins at startup / bootload. 
+My understanding from this discussion is as follows (mostly from the posting by deshipu near the end)
+
+GPIO0  D3 10K pull-up, also collector of NPN transistor 
+          with RTS on base and DTR on emitter (from UART)
+GPIO2  D4 10K pull-up, LED via 1K pull-up
+GPIO4  D2 INPUT
+GPIO5  D1 INPUT
+GPIO12 D6 INPUT
+GPIO13 D7 INPUT
+GPIO14 D5 INPUT
+GPIO15 D8 10K pull-down
+GPIO16 D0 INPUT, also used for reset on wake-up from sleep
+
+So there are 5 pins that can be used as high impedance inputs (that is, D1, D2, D5, D6, D7)
+
+It is OK to use D3 and D4 for loads backed by Vcc.
+It is OK to use D8 for loads backed by Ground. 
+
+ToDo list:
+KiCad schematic:
+ - add pictures of MosFET pins on each device (the BS250 is reversed from its data sheet)
+ - add a new schematic library for the WeMos D1 Mini module showing the internal resistors and diode
+ - add notes about the A0 series resistor, maybe a table of values
+Software:
+ - add button recognition (in 2 minds about whether to use classes or not)
+    I will probably try with classes and see how it looks. 
+BS250 data sheet:
+ - make a new version updated with the correct pinout
+Breadboard:
+ - add labels to the buttons (Zero and Scale)
 
 
 

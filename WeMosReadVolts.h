@@ -5,7 +5,7 @@ class WeMosVolts {
   void calibrateZero();
   void calibrateScale(int mV);
   float getVolts(); // returns Volts
-  int getMilliVolts(); // returns milli volts
+  float getMilliVolts(); // returns milli volts
   int fullScale = 3200;  // mV
   private:
   int zeroOffset=0; // ADC output code
@@ -26,7 +26,7 @@ void WeMosVolts::calibrateScale(int mV){
   fullScale = analogRead(A0);  
 }
 
-int WeMosVolts::getMilliVolts(){ // returns milli volts
+float WeMosVolts::getMilliVolts(){ // returns milli volts
   return (analogRead(A0)-zeroOffset)*fullScale / (1023-zeroOffset);  
 }
 
