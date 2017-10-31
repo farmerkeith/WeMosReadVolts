@@ -65,7 +65,7 @@ It is OK to use D8 for loads backed by Ground.
 KiCad schematic:
  - add pictures of MosFET pins on each device (the BS250 is reversed from its data sheet) DONE
  - add a new schematic library for the WeMos D1 Mini module showing the internal resistors and diode DONE
- - add notes about the A0 series resistor, maybe a table of values
+ - add notes about the A0 series resistor, maybe a table of values DONE\
 Software:
  - add button recognition (in 2 minds about whether to use classes or not)
     I will probably try with classes and see how it looks. 
