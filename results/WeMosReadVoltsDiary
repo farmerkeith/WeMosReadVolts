@@ -65,16 +65,31 @@ It is OK to use D8 for loads backed by Ground.
 KiCad schematic:
  - add pictures of MosFET pins on each device (the BS250 is reversed from its data sheet) DONE
  - add a new schematic library for the WeMos D1 Mini module showing the internal resistors and diode DONE
- - add notes about the A0 series resistor, maybe a table of values DONE\
+ - add notes about the A0 series resistor, maybe a table of values DONE
 Software:
  - add button recognition (in 2 minds about whether to use classes or not)
     I will probably try with classes and see how it looks. 
- - analyse sample data and derive algorithm for conversion of ADC reading to voltage
+ - analyse sample data and derive algorithm for conversion of ADC reading to voltage STARTED
  - program the algorithm
 BS250 data sheet:
  - make a new version updated with the correct pinout DONE 
 Breadboard:
  - add labels to the buttons (Zero and Scale)
 
+1 November 2017: ToDo list
+Change the A0 voltage input to a two-pot, fine and coarse control (the current multi-turn pot is not able to give 1mv accuracy)
+ - work out suitable resistor values in spreadsheet DONE
+ - implement fine and coarse on the breadboard DONE
+ - check how accurately the voltage can be set with the 1-turn pot (fine pot must cover something like 2 times the minimum coarse adjustment DONE
+ - change KiCad schematic DONE
+Research button de-bounce software
+ - look at DFR_Key library
+ - Google search for de-bounce
+ - Google search for button press detection
+Experiment with various measurement times for calZero and calScale functions
+ - note that ADS1115 can take up to 125 ms to make a measurement
+ - review the stackExchange forum that I contributed to on the subject of measurement results and timing
+ 
 
+A
 

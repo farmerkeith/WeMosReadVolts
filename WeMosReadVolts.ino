@@ -214,7 +214,7 @@ void printStats(){
 
   rawVoltageMean /= cyclePrintTrigger;
   Serial.print ("raw voltage mean ");
-  Serial.println (rawVoltageMean);
+  Serial.println (rawVoltageMean,4);
   rawVoltageMean = 0;
 
 

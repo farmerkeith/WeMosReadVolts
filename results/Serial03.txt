@@ -175,7 +175,7 @@ Mulltimeter voltage reading ADC mode ADC mode2 ADC mean
 3.38	1022
 3.40	1024
 
-Raw reading distribution for A0 = 1.000 volts (multimeter 20V scale)
+Raw reading distribution for A0 = 1.000 volts (multimeter 2V scale)
 rawV 302 V 0.992 0 
 rawV 303 V 0.996 1 *
 rawV 304 V 0.999 601 **********************************************************************************************************************************************************************************************************
@@ -187,7 +187,7 @@ rawV 309 V 1.015 0
 raw voltage mean 306.58
 cycleCounter 9600
 
-Raw reading distribution for A0 = 1.001 volts (multimeter 20V scale)
+Raw reading distribution for A0 = 1.001 volts (multimeter 2V scale)
 rawV 298 V 0.979 0 
 rawV 299 V 0.983 1 *
 rawV 300 V 0.986 0 
@@ -205,7 +205,7 @@ raw voltage mean 306.79
 cycleCounter 12100
 
 
-Raw reading distribution for A0 = 1.002 volts (multimeter 20V scale)
+Raw reading distribution for A0 = 1.002 volts (multimeter 2V scale)
 rawV 302 V 0.992 0 
 rawV 303 V 0.996 0 
 rawV 304 V 0.999 801 **********************************************************************************************************************************************************************************************************
@@ -219,7 +219,7 @@ raw voltage mean 306.65
 cycleCounter 24000
 
 
-Raw reading distribution for A0 = 1.003 volts (multimeter 20V scale)
+Raw reading distribution for A0 = 1.003 volts (multimeter 2V scale)
 (meter reads 1.004 mostly, sometimes 1.003)
 rawV 298 V 0.979 0 
 rawV 299 V 0.983 0 
@@ -237,7 +237,7 @@ rawV 310 V 1.019 0
 raw voltage mean 307.81
 cycleCounter 15100
 
-Raw reading distribution for A0 = 1.005 volts (multimeter 20V scale)
+Raw reading distribution for A0 = 1.005 volts (multimeter 2V scale)
 rawV 291 V 0.956 0 
 rawV 292 V 0.960 0 
 rawV 293 V 0.963 1 *
@@ -262,7 +262,7 @@ rawV 311 V 1.022 0
 raw voltage mean 307.90
 cycleCounter 131100
 
-Raw reading distribution for A0 = 1.006 volts (multimeter 20V scale)
+Raw reading distribution for A0 = 1.006 volts (multimeter 2V scale)
 rawV 303 V 0.996 0 
 rawV 304 V 0.999 1 *
 rawV 305 V 1.002 3 ***
@@ -276,7 +276,7 @@ raw voltage mean 308.15
 cycleCounter 17600
 
 
-Raw reading distribution for A0 = 0.100 volts (multimeter 20V scale)
+Raw reading distribution for A0 = 0.100 volts (multimeter 2V scale)
 rawV  32 V 0.105 0 
 rawV  33 V 0.108 0 
 rawV  34 V 0.112 0 
@@ -289,7 +289,7 @@ rawV  40 V 0.131 0
 raw voltage mean 35.01
 cycleCounter 14900
 
-Raw reading distribution for A0 = 0.101 volts (multimeter 20V scale)
+Raw reading distribution for A0 = 0.101 volts (multimeter 2V scale)
 rawV  33 V 0.108 0 
 rawV  34 V 0.112 0 
 rawV  35 V 0.115 6308 **********************************************************************************************************************************************************************************************************
@@ -304,7 +304,7 @@ raw voltage mean 35.69
 cycleCounter 16400
 
 
-Raw reading distribution for A0 = 0.102 volts (multimeter 20V scale)
+Raw reading distribution for A0 = 0.102 volts (multimeter 2V scale)
 rawV  33 V 0.108 0 
 rawV  34 V 0.112 0 
 rawV  35 V 0.115 1593 **********************************************************************************************************************************************************************************************************
@@ -318,7 +318,7 @@ raw voltage mean 36.32
 cycleCounter 10900
 
 
-Raw reading distribution for A0 = 0.103 volts (multimeter 20V scale)
+Raw reading distribution for A0 = 0.103 volts (multimeter 2V scale)
 rawV  33 V 0.108 0 
 rawV  34 V 0.112 0 
 rawV  35 V 0.115 1 *
@@ -345,7 +345,7 @@ rawV  40 V 0.131 0
 raw voltage mean 35.96
 cycleCounter 10500
 
-Raw reading distribution for A0 = 0.104 volts (multimeter 20V scale)
+Raw reading distribution for A0 = 0.104 volts (multimeter 2V scale)
 rawV  33 V 0.108 0 
 rawV  34 V 0.112 0 
 rawV  35 V 0.115 11 ***********
@@ -359,7 +359,7 @@ rawV  42 V 0.138 0
 raw voltage mean 36.56
 cycleCounter 51800
 
-Raw reading distribution for A0 = 0.009 volts (multimeter 20V scale)
+Raw reading distribution for A0 = 0.009 volts (multimeter 2V scale)
 rawV  6 V 0.020 0 
 rawV  7 V 0.023 0 
 rawV  8 V 0.026 18582 **********************************************************************************************************************************************************************************************************
@@ -370,12 +370,130 @@ raw voltage mean 8.00
 cycleCounter 18900
 
 
-Raw reading distribution for A0 = 0.011 volts (multimeter 20V scale)
+Raw reading distribution for A0 = 0.010 volts (multimeter 2V scale)
+rawV  6 V 0.020 0 
+rawV  7 V 0.023 0 
+rawV  8 V 0.026 10157 **********************************************************************************************************************************************************************************************************
+rawV  9 V 0.030 343 **********************************************************************************************************************************************************************************************************
+rawV  10 V 0.033 0 
+rawV  11 V 0.036 0 
+raw voltage mean 8.03
+cycleCounter 10500
 
+Raw reading distribution for A0 = 0.016 volts (multimeter 2V scale)
+rawV  6 V 0.020 0 
+rawV  7 V 0.023 0 
+rawV  8 V 0.026 0 
+rawV  9 V 0.030 11 ***********
+rawV  10 V 0.033 11411 **********************************************************************************************************************************************************************************************************
+rawV  11 V 0.036 77 *****************************************************************************
+rawV  12 V 0.039 0 
+rawV  13 V 0.043 0 
+rawV  14 V 0.046 0 
+rawV  15 V 0.049 1 *
+rawV  16 V 0.053 0 
+raw voltage mean 10.01
+cycleCounter 11500
 
-Raw reading distribution for A0 = 0.012 volts (multimeter 20V scale)
+Raw reading distribution for A0 = 0.011 volts (multimeter 2V scale)
+rawV  6 V 0.020 0 
+rawV  7 V 0.023 0 
+rawV  8 V 0.026 9078 **********************************************************************************************************************************************************************************************************
+rawV  9 V 0.030 89319 **********************************************************************************************************************************************************************************************************
+rawV  10 V 0.033 86 **************************************************************************************
+rawV  11 V 0.036 7 *******
+rawV  12 V 0.039 1 *
+rawV  13 V 0.043 1 *
+rawV  14 V 0.046 0 
+rawV  15 V 0.049 0 
+rawV  16 V 0.053 3 ***
+rawV  17 V 0.056 0 
+rawV  18 V 0.059 0 
+rawV  19 V 0.062 0 
+rawV  20 V 0.066 0 
+rawV  21 V 0.069 0 
+rawV  22 V 0.072 0 
+rawV  23 V 0.076 1 *
+rawV  24 V 0.079 1 *
+rawV  25 V 0.082 0 
+rawV  26 V 0.085 1 *
+rawV  27 V 0.089 0 
+rawV  28 V 0.092 0 
+rawV  29 V 0.095 2 9**
+rawV  30 V 0.099 0 
+rawV  31 V 0.102 0 
+rawV  32 V 0.105 0 
+raw voltage mean 9.00
+cycleCounter 98500
+Raw reading distribution for A0 = 0.000 volts (multimeter 2V scale)
+rawV  3 V 0.010 0 
+rawV  4 V 0.013 409 **********************************************************************************************************************************************************************************************************
+rawV  5 V 0.016 25419 **********************************************************************************************************************************************************************************************************
+rawV  6 V 0.020 758 **********************************************************************************************************************************************************************************************************
+rawV  7 V 0.023 13 *************
+rawV  8 V 0.026 0 
+rawV  9 V 0.030 0 
+rawV  10 V 0.033 0 
+rawV  11 V 0.036 0 
+rawV  12 V 0.039 0 
+rawV  13 V 0.043 0 
+rawV  14 V 0.046 0 
+rawV  15 V 0.049 1 *
+rawV  16 V 0.053 0 
+raw voltage mean 5.02
+cycleCounter 26600
+Raw reading distribution for A0 = 0.000 volts (multimeter 2V scale)
+rawV  2 V 0.007 0 
+rawV  3 V 0.010 0 
+rawV  4 V 0.013 256 **********************************************************************************************************************************************************************************************************
+rawV  5 V 0.016 5125 **********************************************************************************************************************************************************************************************************
+rawV  6 V 0.020 19 *******************
+rawV  7 V 0.023 0 
+rawV  8 V 0.026 0 
+raw voltage mean 5.0000
+cycleCounter 5400
+Raw reading distribution for A0 = 0.000 volts (multimeter 2V scale)
+rawV  2 V 0.007 0 
+rawV  3 V 0.010 0 
+rawV  4 V 0.013 14910 **********************************************************************************************************************************************************************************************************
+rawV  5 V 0.016 13486 **********************************************************************************************************************************************************************************************************
+rawV  6 V 0.020 1 *
+rawV  7 V 0.023 0 
+rawV  8 V 0.026 3 ***
+rawV  9 V 0.030 0 
+raw voltage mean 4.4100
+cycleCounter 28400
+Raw reading distribution for A0 = 0.099 volts (multimeter 2V scale)
+rawV  32 V 0.105 0 
+rawV  33 V 0.108 0 
+rawV  34 V 0.112 60 ************************************************************
+rawV  35 V 0.115 22875 **********************************************************************************************************************************************************************************************************
+rawV  36 V 0.118 493 **********************************************************************************************************************************************************************************************************
+rawV  37 V 0.122 263 **********************************************************************************************************************************************************************************************************
+rawV  38 V 0.125 88 ****************************************************************************************
+rawV  39 V 0.128 23 ***********************
+rawV  40 V 0.131 11 ***********
+rawV  41 V 0.135 10 **********
+rawV  42 V 0.138 27 ***************************
+rawV  43 V 0.141 49 *************************************************
+rawV  44 V 0.145 39 ***************************************
+rawV  45 V 0.148 7 *******
+rawV  46 V 0.151 5 *****
+rawV  47 V 0.154 5 *****
+rawV  48 V 0.158 7 *******
+rawV  49 V 0.161 5 *****
+rawV  50 V 0.164 1 *
+rawV  51 V 0.168 5 *****
+rawV  52 V 0.171 0 
+rawV  53 V 0.174 0 
+rawV  54 V 0.177 12 ************
+rawV  55 V 0.181 8 ********
+rawV  56 V 0.184 3 ***
+rawV  57 V 0.187 4 ****
+rawV  58 V 0.191 0 
+raw voltage mean 35.0200
+cycleCounter 24000
+Raw reading distribution for A0 = 0.099 volts (multimeter 2V scale)
 
-
-Raw reading distribution for A0 = 0.013 volts (multimeter 20V scale)
 
 
