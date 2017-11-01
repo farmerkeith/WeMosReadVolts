@@ -6,13 +6,16 @@
 // input impedance will be 320 K plus variation due to resistor tolerances. 
 // to get full scale of 5.9 V put a 270K resistor in series with A0. 
 // this is an example sketch to calibrate and read voltages
+// 1 Nov 2017 adding functions to use calibration pushbuttons calZero and calScale
 
 #include "WeMosReadVolts.h" // associated tab file
 #include "farmerkeith_LED.h" // tab file
+#include <Bounce2.h> // for debouncing switch inputs
 
-const int fullScale = 3365; // mV
-const byte calibrateZeroPin  = 13; // D7
-const byte calibrateScalePin = 4; // D2
+const int USBVcc = 4720 ; // mV - supply voltage from USB
+const long fullScale = 617371; // mV*100
+const byte calibrateZeroPin  = 13; // D7, normally LOW
+const byte calibrateScalePin = 4; // D2, normally HIGH
 const byte redVPin = 14; // set pin D5/GPIO14 for the red LED to Vcc
 const byte greenGPin = 12; // set pin D6/GPIO12 for the green LED to Ground
 
@@ -23,7 +26,7 @@ const int delayBetweenMeasurements = 200; // ms
 unsigned int cycleCounter = 0; // counting measurements
 const unsigned int cyclePrintTrigger = 100; // print out stats
   // once every No. of measurement cycles
-int rawVoltage;
+long rawVoltage;
 float rawVoltageMean = 0;
 float voltage;
 int lowVoltage, highVoltage;
@@ -34,28 +37,31 @@ int loHiBreak, loHiBreak1; // used for classifying measurements into Lo and Hi g
 const int filter=16; // exponential decay digital filter parameter
 unsigned long measureTime, taskTime=0;
 int mCount=0;
+enum calState {
+  calState_normal,
+  calState_zero,
+  calState_scale,
+  calState_waitZero,
+  calState_waitScale
+} calState ;
 
-WeMosVolts wmv;
+WeMosVolts wmv; // create wmv object
 LED ledV(redVPin, 1); // Vcc behind red LED
 LED ledG(greenGPin, 0); // Ground behind green LED
 // LED ledV(calibrateScalePin, 1); // Vcc behind red LED
-
+Bounce calZero(calibrateZeroPin, 10); // bounce object: pin, ms
+Bounce calScale(calibrateScalePin, 10); // bounce object: pin, ms
 
 void setup() {
   Serial.begin(115200);
   Serial.println("\n WeMosReadVoltsTest");
   pinMode(calibrateZeroPin,INPUT);
-  pinMode(calibrateScalePin,INPUT); // D2
-//  pinMode(15,INPUT); // GPIO 15 is D8
-//  pinMode(5,INPUT); // GPIO 5 is D1
-//  pinMode(4,INPUT); // GPIO 4 is D2
-//  pinMode(0,INPUT); // GPIO 0 is D3
-//  pinMode(2,INPUT); // GPIO 2 is D4
+  pinMode(calibrateScalePin,INPUT);
 
   for (int i=0; i<arraySize; i++){
     value[i]=0;
     mValue[i] =0;
-    voltage = readVoltage(1, 100000, rawVoltage, mCount, measureTime);
+    voltage = readVoltage(rawVoltage, mCount, measureTime);
 //    int tempVoltage = analogRead(A0);
     baseVoltage += rawVoltage; // getting a base value for stats collection
     baseMeasureTime += measureTime;     
@@ -87,12 +93,58 @@ void setup() {
 }
 
 void loop() {
-  // ESP.getVcc(); // can only be used if A0 is floating, cannot be used with WeMos D1 
+  // check calibration button states
+  // Zero button 
+  calZero.update();
+  bool ZeroButton = calZero.read(); // calZero LOW when button not pressed
+  if (calState == calState_normal){
+    if (ZeroButton==HIGH) calState = calState_zero; // calZero button pressed
+  }
+  if (calState == calState_zero){
+    if (ZeroButton==HIGH) { // button pressed
+      calState = calState_waitZero;
+      wmv.calibrateZero();
+      Serial.print (" Zero calibration done");
+      Serial.print (" zeroOffset=");
+      Serial.println (wmv.zeroOffset);
+    } 
+  }
+  if (calState == calState_waitZero){
+    if (ZeroButton==LOW) { // button released 
+      calState = calState_normal;
+      Serial.println (" Zero button released 113");
+    }
+  }
+// same thing for scale button    
+// ---------------------
+  calScale.update();
+  bool ScaleButton = calScale.read(); // calScale HIGH when button not pressed
+
+  if (calState == calState_normal){
+    if (ScaleButton==LOW) calState = calState_scale; // calScale button pressed
+  }
+  if (calState == calState_scale){
+    if (ScaleButton==LOW) { // button pressed
+      calState = calState_waitScale;
+      wmv.calibrateScale(USBVcc);
+      Serial.print (" Scale calibration done");
+      Serial.print (" fullScale=");
+      Serial.println (wmv.fullScale);
+    } 
+  }
+  if (calState == calState_waitScale){
+    if (ScaleButton==HIGH) { // button released 
+      calState = calState_normal;
+      Serial.println (" Scale button released 136");
+    }
+  }
+
+
+// ---------------------  
   if (millis()>=taskTime){ // does not work when millis() rolls over, not a problem for short runs
     
     cycleCounter ++;
-//    voltage = readVoltage(220000, 100000, rawVoltage, mCount, measureTime);
-    voltage = readVoltage(1, 100000, rawVoltage, mCount, measureTime);
+    voltage = readVoltage(rawVoltage, mCount, measureTime);
   
     Serial.print ("T ");
     Serial.print ((float)millis()/1000,3);
@@ -221,18 +273,18 @@ void printStats(){
 } // end of void printStats()
 // _______________________
 
-float readVoltage(int _Rhi, int _Rlo, int &_rawVoltage, int &_mCount, unsigned long &_measureTime){
-  int _fullScale=fullScale;
+float readVoltage(long &_rawVoltage, int &_mCount, unsigned long &_measureTime){
+  long _fullScale=fullScale;
 //  _mCount = 0;
 //  for(_mCount=0; _mCount<20; _mCount++) {
     _measureTime = micros();
-    _rawVoltage = analogRead(A0);
-//    _rawVoltage = wmv.getMilliVolts() ; // was analogRead(A0);
+//    _rawVoltage = analogRead(A0);
+    _rawVoltage = wmv.getMilliVolts() ; // was analogRead(A0);
     _measureTime = micros() - _measureTime;
 //    if (_measureTime<80) break;
 //    delay(50);
 //  } 
   
-  return (float)_rawVoltage *_fullScale*(_Rhi+_Rlo)/_Rlo/1024;
+  return _rawVoltage;
 }
 
