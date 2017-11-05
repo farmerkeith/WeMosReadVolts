@@ -12,7 +12,7 @@
 #include "farmerkeith_LED.h" // tab file
 #include <Bounce2.h> // for debouncing switch inputs
 
-const int USBVcc = 4720 ; // mV - supply voltage from USB
+const int USBVcc = 4700 ; // mV - supply voltage from USB
 const long fullScale = 617371; // mV*100
 const byte calibrateZeroPin  = 13; // D7, normally LOW
 const byte calibrateScalePin = 4; // D2, normally HIGH
@@ -22,11 +22,11 @@ const byte greenGPin = 12; // set pin D6/GPIO12 for the green LED to Ground
 int baseVoltage = 0; // mV, base for stats collection
 int baseMeasureTime = 0; // microseconds, base for stats collection
 const int arraySize = 100; // 32; // size of arrays for stats collection
-const int delayBetweenMeasurements = 200; // ms
+const int delayBetweenMeasurements = 5000; // ms
 unsigned int cycleCounter = 0; // counting measurements
 const unsigned int cyclePrintTrigger = 100; // print out stats
   // once every No. of measurement cycles
-long rawVoltage;
+unsigned long rawVoltage;
 float rawVoltageMean = 0;
 float voltage;
 int lowVoltage, highVoltage;
@@ -94,8 +94,9 @@ void setup() {
 
 void loop() {
   // check calibration button states
+
   // Zero button 
-  calZero.update();
+  calZero.update(); // update status of Bounce object
   bool ZeroButton = calZero.read(); // calZero LOW when button not pressed
   if (calState == calState_normal){
     if (ZeroButton==HIGH) calState = calState_zero; // calZero button pressed
@@ -106,15 +107,25 @@ void loop() {
       wmv.calibrateZero();
       Serial.print (" Zero calibration done");
       Serial.print (" zeroOffset=");
-      Serial.println (wmv.zeroOffset);
+      Serial.print (wmv.zeroOffset);
+      Serial.print (" Min=");
+      Serial.print (wmv.zeroOffsetMin);
+      Serial.print (" Max=");
+      Serial.print (wmv.zeroOffsetMax);
+      Serial.print (" Exp8=");
+      Serial.print (wmv.zeroOffsetExp);
+      Serial.print (" Delta=");
+      Serial.println (wmv.zeroOffset-wmv.zeroOffsetExp);
+      
     } 
   }
   if (calState == calState_waitZero){
     if (ZeroButton==LOW) { // button released 
       calState = calState_normal;
-      Serial.println (" Zero button released 113");
+//      Serial.println (" Zero button released 116");
     }
   }
+
 // same thing for scale button    
 // ---------------------
   calScale.update();
@@ -135,7 +146,7 @@ void loop() {
   if (calState == calState_waitScale){
     if (ScaleButton==HIGH) { // button released 
       calState = calState_normal;
-      Serial.println (" Scale button released 136");
+//      Serial.println (" Scale button released 136");
     }
   }
 
@@ -273,7 +284,7 @@ void printStats(){
 } // end of void printStats()
 // _______________________
 
-float readVoltage(long &_rawVoltage, int &_mCount, unsigned long &_measureTime){
+float readVoltage(unsigned long &_rawVoltage, int &_mCount, unsigned long &_measureTime){
   long _fullScale=fullScale;
 //  _mCount = 0;
 //  for(_mCount=0; _mCount<20; _mCount++) {

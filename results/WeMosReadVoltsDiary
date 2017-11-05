@@ -83,13 +83,20 @@ Change the A0 voltage input to a two-pot, fine and coarse control (the current m
  - check how accurately the voltage can be set with the 1-turn pot (fine pot must cover something like 2 times the minimum coarse adjustment DONE
  - change KiCad schematic DONE
 Research button de-bounce software
- - look at DFR_Key library
- - Google search for de-bounce
+ - look at DFR_Key library - RESULT not useful for this
+ - Google search for de-bounce - found Bounce2, using it but not happy although it works
  - Google search for button press detection
 Experiment with various measurement times for calZero and calScale functions
  - note that ADS1115 can take up to 125 ms to make a measurement
- - review the stackExchange forum that I contributed to on the subject of measurement results and timing
+ - review the stackExchange forum that I contributed to on the subject of measurement  results and timing DONE, no action
  
+5 November 2017
+Updated KiCad schematic to show internal resistors in WeMos D1 mini and also green and red LEDs on weMos pins D6 and D5. Note that LED class software for fade in and fade out using PWM still has problems and has been commented out.
+Updated software WeMosReadVolts.h, with a) 64 reads of A0 for calZero and calScale
+  b) 64 reads if A0 for getMilliVolts 
+  c) changed variables to unsigned long integers where appropriate
+Code still littered with commented out Serial.print() statements, to be removed
+Push buttons for calibration interact with voltage setting pots a little bit. I presume it is the finite ON resistance of the MOSFETs used for switching - need to check by calculation. 
 
-A
+ToDo: take out excess Serial.print() statements
 
