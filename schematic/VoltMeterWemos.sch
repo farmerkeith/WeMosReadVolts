@@ -95,13 +95,7 @@ NoConn ~ 2850 3450
 NoConn ~ 4250 3200
 NoConn ~ 4250 3450
 Wire Wire Line
-	5350 3325 5475 3325
-Wire Wire Line
-	5475 3325 5550 3325
-Wire Wire Line
-	5550 3325 6100 3325
-Wire Wire Line
-	6100 3325 6350 3325
+	5350 3325 6350 3325
 Text Notes 5675 2950 0    60   ~ 0
 test point voltage 0 to 5V
 $Comp
@@ -3398,4 +3392,21 @@ F 3 "" H 4250 2575 50  0001 C CNN
 	1    4250 2575
 	1    0    0    -1  
 $EndComp
+$Comp
+L C C1
+U 1 1 5A00E659
+P 4725 3175
+F 0 "C1" H 4750 3275 50  0000 L CNN
+F 1 "0.1uF" H 4750 3075 50  0000 L CNN
+F 2 "" H 4763 3025 50  0001 C CNN
+F 3 "" H 4725 3175 50  0001 C CNN
+	1    4725 3175
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	5175 3000 4725 3000
+Wire Wire Line
+	4725 3000 4725 3025
+Connection ~ 5175 3000
+Connection ~ 4725 3325
 $EndSCHEMATC
