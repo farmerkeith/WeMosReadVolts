@@ -12,28 +12,32 @@
 #include "farmerkeith_LED.h" // tab file
 #include <Bounce2.h> // for debouncing switch inputs
 
-const int USBVcc = 4700 ; // mV - supply voltage from USB
-const long fullScale = 617371; // mV*100
+const int USBVcc = 4685 ; // mV - supply voltage from USB
+// const long fullScale = 617371; // mV*100
 const byte calibrateZeroPin  = 13; // D7, normally LOW
 const byte calibrateScalePin = 4; // D2, normally HIGH
 const byte redVPin = 14; // set pin D5/GPIO14 for the red LED to Vcc
 const byte greenGPin = 12; // set pin D6/GPIO12 for the green LED to Ground
 
-int baseVoltage = 0; // mV, base for stats collection
-int baseMeasureTime = 0; // microseconds, base for stats collection
-const int arraySize = 100; // 32; // size of arrays for stats collection
-const int delayBetweenMeasurements = 5000; // ms
+long baseCode = 0; // adc code, base for stats collection
+long baseVoltage = 0; // mV, corresponding to baseCode
+long baseMeasureTime = 0; // microseconds, base for stats collection
+const int arraySize = 200; // 32; // size of arrays for stats collection
+const int delayBetweenMeasurements = 200; // ms
 unsigned int cycleCounter = 0; // counting measurements
-const unsigned int cyclePrintTrigger = 100; // print out stats
+const unsigned int cyclePrintTrigger = 200; // print out stats
   // once every No. of measurement cycles
-unsigned long rawVoltage;
+unsigned long milliVolts;
+long voltCode;
+unsigned long voltCodeMean;
 float rawVoltageMean = 0;
 float voltage;
-int lowVoltage, highVoltage;
+unsigned int lowVoltage, highVoltage;
 int value[arraySize]; // array for collecting voltage statistics
+int mVForCode[arraySize]; // array for collecting voltage statistics
 int mValue[arraySize]; // array for collecting measurement count statistics
-int lowMean=0, highMean=0; // filtered values of low group and high group
-int loHiBreak, loHiBreak1; // used for classifying measurements into Lo and Hi groups
+unsigned long lowMean=0, highMean=0; // filtered values of low group and high group
+unsigned long loHiBreak, loHiBreak1; // used for classifying measurements into Lo and Hi groups
 const int filter=16; // exponential decay digital filter parameter
 unsigned long measureTime, taskTime=0;
 int mCount=0;
@@ -58,30 +62,8 @@ void setup() {
   pinMode(calibrateZeroPin,INPUT);
   pinMode(calibrateScalePin,INPUT);
 
-  for (int i=0; i<arraySize; i++){
-    value[i]=0;
-    mValue[i] =0;
-    voltage = readVoltage(rawVoltage, mCount, measureTime);
-//    int tempVoltage = analogRead(A0);
-    baseVoltage += rawVoltage; // getting a base value for stats collection
-    baseMeasureTime += measureTime;     
-//    Serial.print("Setup raw voltage reading ");
-//    Serial.println(tempVoltage);
-    delay(50);
-//    ledG.blink(200,10);
-
-  }
+  initialiseStats();
   
-  baseVoltage = baseVoltage/arraySize;
-  baseMeasureTime = baseMeasureTime/arraySize-(arraySize / 4);
-  lowMean = baseVoltage * 100; // initialise close to final
-  highMean = lowMean; // initialise close to final
-  loHiBreak = lowMean; // initialise close to final
-  baseVoltage = baseVoltage -(arraySize / 2); // -5 removed
-  Serial.print("Base Voltage set to ");
-  Serial.println(baseVoltage);
-  Serial.print(" lowMean, highMean and loHiBreak set to ");
-  Serial.println((float)lowMean/100);
 //  Serial.println("delaying 13 s");
 //  delay(13000);
   while (millis()>taskTime){ // increment start time to just after now
@@ -103,7 +85,10 @@ void loop() {
   }
   if (calState == calState_zero){
     if (ZeroButton==HIGH) { // button pressed
+      Serial.println ("\nZero calibration button pressed");
       calState = calState_waitZero;
+      printStats();
+      delay(50);
       wmv.calibrateZero();
       Serial.print (" Zero calibration done");
       Serial.print (" zeroOffset=");
@@ -116,13 +101,15 @@ void loop() {
       Serial.print (wmv.zeroOffsetExp);
       Serial.print (" Delta=");
       Serial.println (wmv.zeroOffset-wmv.zeroOffsetExp);
-      
+      initialiseStats();
     } 
   }
   if (calState == calState_waitZero){
     if (ZeroButton==LOW) { // button released 
+      Serial.println ("\nZero calibration button released");
       calState = calState_normal;
-//      Serial.println (" Zero button released 116");
+      printStats();
+      initialiseStats();
     }
   }
 
@@ -136,17 +123,25 @@ void loop() {
   }
   if (calState == calState_scale){
     if (ScaleButton==LOW) { // button pressed
+      Serial.println ("\nScale calibration button pressed");
       calState = calState_waitScale;
+//      printStats();
+      delay(50);
       wmv.calibrateScale(USBVcc);
       Serial.print (" Scale calibration done");
       Serial.print (" fullScale=");
       Serial.println (wmv.fullScale);
+      initialiseStats();
     } 
   }
   if (calState == calState_waitScale){
     if (ScaleButton==HIGH) { // button released 
+      Serial.println ("\nScale calibration button released");
       calState = calState_normal;
-//      Serial.println (" Scale button released 136");
+      printStats();
+      Serial.print ("reference voltage USBVcc =");
+      Serial.println (USBVcc);
+      initialiseStats();
     }
   }
 
@@ -155,52 +150,20 @@ void loop() {
   if (millis()>=taskTime){ // does not work when millis() rolls over, not a problem for short runs
     
     cycleCounter ++;
-    voltage = readVoltage(rawVoltage, mCount, measureTime);
-  
-    Serial.print ("T ");
-    Serial.print ((float)millis()/1000,3);
-    Serial.print (" TT ");
-    Serial.print ((float)taskTime/1000,3);
-    Serial.print (" V ");
-    Serial.print ((float)voltage/1000,3);
-    Serial.print (" rawV ");
-    Serial.print(rawVoltage);
-
-    Serial.print (" measureTime=");
-    Serial.print (measureTime);
-//    Serial.print (" mCount=");
-//    Serial.print (mCount);
+    milliVolts = readVoltage(voltCode, mCount, measureTime);
 
     // separate Low and High groups and generate filtered means
-    loHiBreak = loHiBreak*(filter-1)/filter+ 100*rawVoltage/filter;
-    if (rawVoltage - loHiBreak/100<0){
-      lowMean = lowMean*(filter-1)/filter+ 100*rawVoltage/filter;
+    loHiBreak = loHiBreak*(filter-1)/filter+ 100*milliVolts/filter;
+    if (milliVolts - loHiBreak/100<0){
+      lowMean = lowMean*(filter-1)/filter+ 100*milliVolts/filter;
     } else {
-      highMean = highMean*(filter-1)/filter+ 100*rawVoltage/filter;
+      highMean = highMean*(filter-1)/filter+ 100*milliVolts/filter;
     }
   
-    lowVoltage = lowMean *fullScale/102400; // 11K : 11K
-    highVoltage = highMean *fullScale/102400; // 11K : 11K
+    lowVoltage = lowMean ; // *fullScale/102400; // 11K : 11K
+    highVoltage = highMean ; // *fullScale/102400; // 11K : 11K
 
-//  Serial.print (" Break ");
-//  Serial.print (loHiBreak/100);
-//  Serial.print (" loHiBreak1 ");
-//  Serial.print (loHiBreak1/10);
-//    Serial.print (" raw-Break ");
-//    Serial.print (rawVoltage - loHiBreak/100);
-    Serial.print (" lowRawMean ");
-    Serial.print ((float)lowMean/100);
-    Serial.print (" highRawMean ");
-    Serial.print ((float)highMean/100);
-    Serial.print (" lowV ");
-    Serial.print ((float)lowVoltage/1000,3);
-//    Serial.print (" ZeroPin=");
-//    Serial.print (digitalRead(calibrateZeroPin));
-//    Serial.print (" ScalePin=");
-//    Serial.print (digitalRead(calibrateScalePin));
-    Serial.print (" highV ");
-    Serial.print ((float)highVoltage/1000,3);
-    Serial.println();
+    printMeasureLine();
 
     ledV.toggle();
     ledG.toggle();
@@ -211,7 +174,7 @@ void loop() {
       printStats();
       Serial.print  ("cycleCounter ");
       Serial.println(cycleCounter);
-      Serial.println();
+//      Serial.println();
     }
     taskTime += delayBetweenMeasurements;
   }
@@ -219,11 +182,14 @@ void loop() {
 
 // _______________________
 void collectStats(){
-  rawVoltageMean += rawVoltage;
-  int index = rawVoltage-baseVoltage;
+  rawVoltageMean += milliVolts;
+  voltCodeMean += voltCode;
+  int index = voltCode-baseCode;
+//  int index = milliVolts-baseVoltage;
   if (index <0) index = 0;
   if (index > arraySize-1) index = arraySize-1;
   value[index]++;
+  mVForCode[index] = milliVolts;
 // mCount statistics
 //  index = mCount;
 //  if (index > arraySize-1) index = arraySize-1;
@@ -238,10 +204,31 @@ void collectStats(){
 
 // _______________________
 void printStats(){
-  // mCount stats
+//  printMCountStats();
+  printVoltageStats();
+} // end of void printStats()
+// _______________________
+
+float readVoltage(long &_voltCode, int &_mCount, unsigned long &_measureTime){
+    unsigned long _milliVolts;
+//    long _temp=0;
+//  long _fullScale=fullScale;
+//  _mCount = 0;
+//  for(_mCount=0; _mCount<20; _mCount++) {
+    _measureTime = micros();
+//    _rawVoltage = analogRead(A0);
+    _milliVolts = wmv.getMilliVolts(_voltCode) ;
+    _measureTime = micros() - _measureTime;
+//    if (_measureTime<80) break;
+//    delay(50);
+//  } 
+  
+  return _milliVolts;
+}
+
+void printMCountStats(){
 //  for (int i=0; i<21; i++){
   for (int i=0; i<arraySize; i++){
-//    Serial.print("mCount ");
     Serial.print("measureTime ");
     Serial.print (baseMeasureTime + i);
     Serial.print(" Count ");
@@ -254,48 +241,112 @@ void printStats(){
     }
     Serial.println();
   } // end of for (int i=0; i<arraySize; i++)
-  
-  // voltage stats
-  for (int i=0; i<arraySize; i++){
-    Serial.print("rawV ");
-    if (baseVoltage+i<100) Serial.print(" "); // formatting
-    Serial.print (baseVoltage+i);
-    Serial.print(" V ");
-
-    Serial.print((float)(baseVoltage+i)*fullScale/1024000,3); // 11K : 11K
-    Serial.print(" ");
-    
-    Serial.print(value[i]);
-    Serial.print(" ");
-    for (int j=0; j<value[i]; j++){
-      Serial.print ("*");
-      if (j>200) break;
-    }
-    Serial.println();
-  }
-// print mean voltage
-
-  rawVoltageMean /= cyclePrintTrigger;
-  Serial.print ("raw voltage mean ");
-  Serial.println (rawVoltageMean,4);
-  rawVoltageMean = 0;
-
-
-} // end of void printStats()
-// _______________________
-
-float readVoltage(unsigned long &_rawVoltage, int &_mCount, unsigned long &_measureTime){
-  long _fullScale=fullScale;
-//  _mCount = 0;
-//  for(_mCount=0; _mCount<20; _mCount++) {
-    _measureTime = micros();
-//    _rawVoltage = analogRead(A0);
-    _rawVoltage = wmv.getMilliVolts() ; // was analogRead(A0);
-    _measureTime = micros() - _measureTime;
-//    if (_measureTime<80) break;
-//    delay(50);
-//  } 
-  
-  return _rawVoltage;
 }
 
+void  printVoltageStats(){
+  Serial.println("\nVoltage stats");
+  for (int i=0; i<arraySize; i++){
+    if(value[i]!=0||value[i-1]!=0||value[i+1]!=0){
+      Serial.print("VCode ");
+      if (baseVoltage+i<100) Serial.print(" "); // formatting
+      Serial.print (baseCode+i);
+      Serial.print(" V ");
+      Serial.print((float)(mVForCode[i])/1000,3); 
+      Serial.print(" ");
+      Serial.print(value[i]);
+      Serial.print(" ");
+      for (int j=0; j<value[i]; j++){
+        Serial.print ("*");
+        if (j>200) break;
+      }
+      Serial.println();
+    }
+  }
+  printMeanVoltage();
+  
+  rawVoltageMean = 0;
+}
+
+void initialiseStats(){
+  baseCode=0;
+  baseVoltage=0;
+  baseMeasureTime=0;
+  for (int i=0; i<arraySize; i++){
+    value[i]=0;
+    mValue[i] =0;
+    milliVolts = readVoltage(voltCode, mCount, measureTime);
+//    int tempVoltage = analogRead(A0);
+    baseCode += voltCode;
+    baseVoltage += milliVolts; // getting a base value for stats collection
+    baseMeasureTime += measureTime;     
+//    delay(1);
+  }
+  
+  baseVoltage = baseVoltage/arraySize;
+  baseMeasureTime = baseMeasureTime/arraySize-(arraySize / 4);
+  lowMean = baseVoltage * 100; // initialise close to final
+  highMean = lowMean; // initialise close to final
+  loHiBreak = lowMean; // initialise close to final
+  baseVoltage = baseVoltage -(arraySize / 2); // -5 removed
+  if (baseVoltage<0) baseVoltage = 0;
+  baseCode = baseCode/arraySize -(arraySize / 2);
+  if (baseCode<0) baseCode = 0;
+  Serial.print("Base Voltage set to ");
+  Serial.print(baseVoltage);
+  Serial.print(" Base Code set to ");
+  Serial.print(baseCode);
+  Serial.print(" equivalent ");
+  Serial.println((float)baseCode/64);
+  Serial.print(" lowMean, highMean and loHiBreak set to ");
+  Serial.println((float)lowMean/100);
+}
+
+void printMeasureLine(){
+    Serial.print ("T ");
+    Serial.print ((float)millis()/1000,3);
+    Serial.print (" voltCode/64 ");
+    Serial.print ((float)voltCode/64);
+    Serial.print (" V ");
+    Serial.print ((float)milliVolts/1000,3);
+//    Serial.print (" rawV ");
+//    Serial.print(rawVoltage);
+
+//    Serial.print (" measureTime=");
+//    Serial.print (measureTime);
+//    Serial.print (" mCount=");
+//    Serial.print (mCount);
+
+  Serial.print (" Break ");
+  Serial.print (loHiBreak/100);
+//  Serial.print (" loHiBreak1 ");
+//  Serial.print (loHiBreak1/10);
+//    Serial.print (" raw-Break ");
+//    Serial.print (rawVoltage - loHiBreak/100);
+    Serial.print (" lowRawMean ");
+    Serial.print ((float)lowMean/100);
+    Serial.print (" highRawMean ");
+    Serial.print ((float)highMean/100);
+    Serial.print (" lowV ");
+    Serial.print ((float)lowVoltage/100,3);
+//    Serial.print (" ZeroPin=");
+//    Serial.print (digitalRead(calibrateZeroPin));
+//    Serial.print (" ScalePin=");
+//    Serial.print (digitalRead(calibrateScalePin));
+    Serial.print (" highV ");
+    Serial.print ((float)highVoltage/100,3);
+    Serial.println();
+}
+
+void printMeanVoltage(){
+  unsigned long VMean=0, iTot=0;
+  for (int i=0; i<arraySize; i++){
+      VMean += value[i]*(mVForCode[i]);
+      iTot += value[i];
+  }
+  Serial.print("Counts ");
+  Serial.print(iTot);
+  Serial.print(" Aggregate voltage ");
+  Serial.print(VMean);
+  Serial.print(" Mean milli volts ");
+  Serial.println((float)VMean/iTot,4);
+}

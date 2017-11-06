@@ -99,4 +99,16 @@ Code still littered with commented out Serial.print() statements, to be removed
 Push buttons for calibration interact with voltage setting pots a little bit. I presume it is the finite ON resistance of the MOSFETs used for switching - need to check by calculation. 
 
 ToDo: take out excess Serial.print() statements
+7 November 2017
+ToDo list:
+ - add capacitor to A0 pin in hardware DONE
+ - add capacitor to A0 pin in schematic
+ - add WemosPinMap namespace file
+ - reorganise folder structure
+ - look at statistics class
+ - organise button software into functions and/or object
+ - scale display of reading statistics distribution
+ - look at stats from last night DONE
+ - do more runs with capacitor in place
+
 
