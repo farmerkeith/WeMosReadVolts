@@ -7,26 +7,29 @@
 // to get full scale of 5.9 V put a 270K resistor in series with A0. 
 // this is an example sketch to calibrate and read voltages
 // 1 Nov 2017 adding functions to use calibration pushbuttons calZero and calScale
+// 7 Nov 2017 
 
 #include "WeMosReadVolts.h" // associated tab file
 #include "farmerkeith_LED.h" // tab file
 #include <Bounce2.h> // for debouncing switch inputs
+#include "wemosPinMap.h" // namespace for wemos pin names
 
 const int USBVcc = 4685 ; // mV - supply voltage from USB
+const int arraySize = 200; // 32; // size of arrays for stats collection
+const int delayBetweenMeasurements = 200; // ms
+const unsigned int cyclePrintTrigger = 200; // print out stats
+  // once every No. of measurement cycles
+const byte oversampling = 2;
 // const long fullScale = 617371; // mV*100
-const byte calibrateZeroPin  = 13; // D7, normally LOW
-const byte calibrateScalePin = 4; // D2, normally HIGH
-const byte redVPin = 14; // set pin D5/GPIO14 for the red LED to Vcc
-const byte greenGPin = 12; // set pin D6/GPIO12 for the green LED to Ground
+const byte calibrateZeroPin  = wemosPin.D7; // 13; // D7, normally LOW
+const byte calibrateScalePin = wemosPin.D2; // 4; // D2, normally HIGH
+const byte redVPin = wemosPin.D5; // 14; // set pin D5/GPIO14 for the red LED to Vcc
+const byte greenGPin = wemosPin.D6; // 12; // set pin D6/GPIO12 for the green LED to Ground
 
 long baseCode = 0; // adc code, base for stats collection
 long baseVoltage = 0; // mV, corresponding to baseCode
 long baseMeasureTime = 0; // microseconds, base for stats collection
-const int arraySize = 200; // 32; // size of arrays for stats collection
-const int delayBetweenMeasurements = 200; // ms
 unsigned int cycleCounter = 0; // counting measurements
-const unsigned int cyclePrintTrigger = 200; // print out stats
-  // once every No. of measurement cycles
 unsigned long milliVolts;
 long voltCode;
 unsigned long voltCodeMean;
@@ -58,10 +61,13 @@ Bounce calScale(calibrateScalePin, 10); // bounce object: pin, ms
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("\n WeMosReadVoltsTest");
+  Serial.println("\n WeMosReadVolts");
   pinMode(calibrateZeroPin,INPUT);
   pinMode(calibrateScalePin,INPUT);
 
+  wmv.oversampling = oversampling; 
+  delay(500);
+  Serial.println("Initialising statistics counters and start values");
   initialiseStats();
   
 //  Serial.println("delaying 13 s");
@@ -113,7 +119,7 @@ void loop() {
     }
   }
 
-// same thing for scale button    
+// Scale button    
 // ---------------------
   calScale.update();
   bool ScaleButton = calScale.read(); // calScale HIGH when button not pressed
@@ -245,19 +251,48 @@ void printMCountStats(){
 
 void  printVoltageStats(){
   Serial.println("\nVoltage stats");
+  Serial.print ("Oversampling: ");
+  Serial.print (oversampling);
+  Serial.println (" measurements per value");
+  Serial.println ("Delay in oversampling loop = 20ms");
+  Serial.println ("VCode VCode/os mV   Count  % Graphical");
+  
+  int maxValue = 0;
+  for (int i=0; i<arraySize; i++){
+    if (value[i]> maxValue) maxValue = value[i];
+  }
+  if (maxValue <80) maxValue = 80;
   for (int i=0; i<arraySize; i++){
     if(value[i]!=0||value[i-1]!=0||value[i+1]!=0){
-      Serial.print("VCode ");
-      if (baseVoltage+i<100) Serial.print(" "); // formatting
+//      Serial.print("VCode ");
+      if (baseCode+i<100) Serial.print(" "); // formatting
       Serial.print (baseCode+i);
-      Serial.print(" V ");
-      Serial.print((float)(mVForCode[i])/1000,3); 
       Serial.print(" ");
-      Serial.print(value[i]);
+      Serial.print ((float)(baseCode+i)/oversampling,2);
       Serial.print(" ");
-      for (int j=0; j<value[i]; j++){
-        Serial.print ("*");
-        if (j>200) break;
+//      Serial.print(" V ");
+      Serial.print((float)mVForCode[i]/1000,3); 
+      Serial.print(" ");
+      if(value[i]<10) Serial.print (" ");
+      if(value[i]<100) Serial.print (" ");
+      if(value[i]<1000) Serial.print (" ");
+      Serial.print(value[i]); // raw count
+      Serial.print(" ");
+      float v1 = ((float)value[i]*100/maxValue); // normalise
+      if(v1<10) Serial.print (" ");
+      if(v1<100) Serial.print (" ");
+      if(v1<1000) Serial.print (" ");
+      Serial.print(v1,1); // normalised
+      if (value[i] != 0){
+        Serial.print(" ");
+        int j1 = value[i]*80/maxValue;
+        if (j1==0) Serial.print ("!");
+        else {
+          for (int j=0; j<j1; j++){
+          Serial.print ("*");
+          if (j>200) break;
+          }
+        }
       }
       Serial.println();
     }
@@ -274,6 +309,8 @@ void initialiseStats(){
   for (int i=0; i<arraySize; i++){
     value[i]=0;
     mValue[i] =0;
+  }
+  for (int i=0; i<8; i++){
     milliVolts = readVoltage(voltCode, mCount, measureTime);
 //    int tempVoltage = analogRead(A0);
     baseCode += voltCode;
@@ -282,21 +319,21 @@ void initialiseStats(){
 //    delay(1);
   }
   
-  baseVoltage = baseVoltage/arraySize;
-  baseMeasureTime = baseMeasureTime/arraySize-(arraySize / 4);
+  baseVoltage = baseVoltage/8;
+  baseMeasureTime = baseMeasureTime/8 - arraySize/4;
   lowMean = baseVoltage * 100; // initialise close to final
   highMean = lowMean; // initialise close to final
   loHiBreak = lowMean; // initialise close to final
-  baseVoltage = baseVoltage -(arraySize / 2); // -5 removed
+  baseVoltage = baseVoltage -(arraySize / 2);
   if (baseVoltage<0) baseVoltage = 0;
-  baseCode = baseCode/arraySize -(arraySize / 2);
+  baseCode = baseCode/8 -(arraySize / 2);
   if (baseCode<0) baseCode = 0;
   Serial.print("Base Voltage set to ");
   Serial.print(baseVoltage);
   Serial.print(" Base Code set to ");
   Serial.print(baseCode);
   Serial.print(" equivalent ");
-  Serial.println((float)baseCode/64);
+  Serial.println((float)baseCode/oversampling);
   Serial.print(" lowMean, highMean and loHiBreak set to ");
   Serial.println((float)lowMean/100);
 }
@@ -304,8 +341,8 @@ void initialiseStats(){
 void printMeasureLine(){
     Serial.print ("T ");
     Serial.print ((float)millis()/1000,3);
-    Serial.print (" voltCode/64 ");
-    Serial.print ((float)voltCode/64);
+    Serial.print (" voltCode/ov ");
+    Serial.print ((float)voltCode/oversampling);
     Serial.print (" V ");
     Serial.print ((float)milliVolts/1000,3);
 //    Serial.print (" rawV ");

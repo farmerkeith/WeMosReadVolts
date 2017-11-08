@@ -102,13 +102,50 @@ ToDo: take out excess Serial.print() statements
 7 November 2017
 ToDo list:
  - add capacitor to A0 pin in hardware DONE
- - add capacitor to A0 pin in schematic
- - add WemosPinMap namespace file
- - reorganise folder structure
+ - add capacitor to A0 pin in schematic DONE
+ - add WemosPinMap namespace/class file DONE
+ - reorganise folder structure DONE
+ - scale display of reading statistics distribution DONE
+ - look at stats from last night DONE
+ - add oversampling parameter DONE
+ - do more runs with capacitor in place IN PROGRESS
  - look at statistics class
  - organise button software into functions and/or object
- - scale display of reading statistics distribution
- - look at stats from last night DONE
- - do more runs with capacitor in place
+ - look at voltages with oscilloscope
+ - do calculations for calibration voltage error and fix design if necessary DONE, SEE BELOW
+
+Oversampling sample files:
+Oversampling  File Count
+1 	Serial12.txt	18,400
+2 	Serial10.txt	42,600
+2 	Serial11.txt	94,000
+4 	Serial13.txt	24,000
+8 	Serial09.txt	97,200
+16 	Serial14.txt	32,200
+32
+64	Serial06.txt	24,000 
+64	Serial08.txt	4,400
+
+Design change:
+Change R7 to 1K Ohms
+Change BS250 to IR4905
+Change 2N7000 to IRFZ44N
+Swap single turn and multi-turn pots
+ - update schematic DONE
+ - update hardware breadboard DONE
+
+Conclusion from looking at distributions:
+The oversampling is not working. Each value, obtained with a run of successive measurements, 
+only produces many same values. Presumably the AtoD converter needs time to recover and 
+be able to start measuring again. 
+So I added a delay() in the oversampling loop. At least 10 ms seems to be required, even then the
+distributin has a "hole" in the centre between two code values. So maybe it needs to be a bit more. 
+I will try 20 ms (and 50 ms?). The issue is that oversampling 64 times with a delay of 50 ms reuires 3.2 seconds!
+so there is a real limit to the improvement in accuracy obtainable by oversampling. 
+
+Another idea: make the object read the voltage every 20 (or 50?) ms and put it through
+a filter. Then the function of reading the voltage just consists of reading the voltage variable. 
+Zero and Scale calibration need a bit more thought. 
+
 
 

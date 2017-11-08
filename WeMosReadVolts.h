@@ -10,10 +10,11 @@ class WeMosVolts {
   unsigned long getMilliVolts(long &temp1); // returns milli volts
   unsigned long fullScale = 6158;  // mV, max 2^16-1
 //  float zeroOffset=5; // ADC output code
-  long zeroOffset=320; // ADC output code * 64
-  float zeroOffsetMin=1000; // ADC output code * 64
-  float zeroOffsetMax=0; // ADC output code * 64
-  float zeroOffsetExp=320; // ADC output code * 64
+  long zeroOffset=5 * oversampling; // ADC output code * oversampling
+  float zeroOffsetMin=1000; // ADC output code * oversampling
+  float zeroOffsetMax=0; // ADC output code * oversampling
+  float zeroOffsetExp=zeroOffset; // ADC output code * oversampling
+  byte oversampling = 64; // No. of measurements per report
 //  private:
 };
 
@@ -24,64 +25,71 @@ WeMosVolts::WeMosVolts(){
 // functions
 void WeMosVolts::calibrateZero(){ 
   // assumes input is connected to 0 volts
-//  float temp = 0;
-  int temp = 0;
-  temp = analogRead(A0); // discard first reading
-  temp = 0;
   Serial.print (" calibrate Zero readings ");
-  for (int i=0; i<64; i++){
+  delay(200); // time for calibration circuit to settle
+  unsigned long temp = analogRead(A0); // discard first reading
+  temp = 0;
+  for (int i=0; i<oversampling; i++){
     int temp1 = analogRead(A0);
     temp += temp1;
-    delay(1);
-//    Serial.print (" ");
-//    Serial.print (temp1);
+//    delay(1);
+    yield();
+    Serial.print (" ");
+    Serial.print (temp1);
   }
-//  Serial.println();
+  Serial.println();
   if (temp<zeroOffsetMin) zeroOffsetMin=temp; // set Min 
   if (temp>zeroOffsetMax) zeroOffsetMax=temp; // set Min 
   zeroOffsetExp = zeroOffsetExp*7/8 + temp/8; // set Exp 
 
 //  (temp +=1) /= 64;  
-  zeroOffset = temp; // 64 * average reading over 64 measurements
+  zeroOffset = temp; // oversampling * average reading
 }
 
 void WeMosVolts::calibrateScale(unsigned long mV){
   // assumes input is connected to mV milli volts
-  
-  unsigned long temp = analogRead(A0);
-  temp = 0;
-  delay(1);
   Serial.print (" calibrate Scale readings ");
-  for (int i=0; i<64; i++){
+  delay(300); // time for calibration circuit to settle
+  int val[oversampling];
+  unsigned long temp = analogRead(A0); // discard first reading
+  temp = 0;
+  for (int i=0; i<oversampling; i++){
     int temp1 = analogRead(A0);
     temp += temp1;
-    delay(1);
-//    Serial.print (" ");
-//    Serial.print (temp1);
+    yield();
+    val[i] = temp1;
   }
+  for (int i=0; i<oversampling; i++){
+    Serial.print (" ");
+    Serial.print (val[i]);
+  }
+  Serial.println ();
   Serial.print("Scale analogRead(A0) total code ");
   Serial.print(temp);
   Serial.print(" average ");
-  Serial.println((float)temp/64);
-  fullScale = (mV * (64*1024-zeroOffset))/(temp-zeroOffset);  
+  Serial.println((float)temp/oversampling);
+  fullScale = (mV * (oversampling*1024-zeroOffset))/(temp-zeroOffset);  
 
-//   Serial.print (" fullScale=");
-//  Serial.print (fullScale);
-//  Serial.print (" ");
-//  Serial.println ((float)(mV * (1024-zeroOffset))/(1000-zeroOffset));
 }
 
 unsigned long WeMosVolts::getMilliVolts(long &temp){ // returns milli volts
-    temp = analogRead(A0); // discard first reading
-    temp = 0;
-    for (int i=0; i<64; i++){
-      temp += analogRead(A0);
-    }
-//    Serial.print("getMilliVolts analogRead(A0) average ");
-//    Serial.println((float)temp/64);
+  int val[oversampling];
+  temp = analogRead(A0); // discard first reading
+  temp = 0;
+  for (int i=0; i<oversampling; i++){
+    val[i]= analogRead(A0);
+    temp += val[i];
+    yield();
+    delay(20);
+  }
+//  for (int i=0; i<oversampling; i++){
+//    Serial.print (" ");
+//    Serial.print (val[i]);
+//  }
+//  Serial.println ();
     if (temp-zeroOffset<=0) return 0; 
     else 
-    return (((temp -zeroOffset)*(long)fullScale) / (64*1024-zeroOffset));  
+    return (((temp -zeroOffset)*(long)fullScale) / (oversampling*1024-zeroOffset));  
 }
 
 float WeMosVolts::getVolts(){ // returns Volts
