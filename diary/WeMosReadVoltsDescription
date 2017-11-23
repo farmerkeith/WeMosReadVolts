@@ -1,0 +1,6 @@
+WeMosReadVoltsDescription
+The WeMos D1 Mini Pro has a single analog to digital converter which can be used to measure voltage using the analogRead(A0) statement. 
+The pin A0 is connected to the ADC input of the ESP8266 microcontroller through a voltage divider of 220 K / 100 K ohms, so the 10 bit ADC ESP8266 with a range of 1V is scaled to a range of 3.2 Volts with a least significant bit nominal sensitivity of 3.2/1024=3.125 mV. 
+In many practical situations, the range of 3.2V is not sufficient, but it can be extended to any arbitrary level with one external resistor. The schematic diagram has a list of suitable values to achieve various ranges which may be of general use. For example, a 180K resistor will give a range up to 5V, or a 1.2M resistor will give a range up to 15.2V. The LSB step size naturally increases as the range increases. 
+
+The provision of a single analog input is a limitation. It could be extended to measure multiple inputs using a multiplexer made with discrete components, or an integrated circuit multiplexer. However the complexity of doing this is almost certain to exceed the complexity of using an external ADC device such as an ADS1115 which gives 4 analog inputs accessed via  

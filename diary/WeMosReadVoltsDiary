@@ -110,8 +110,8 @@ ToDo list:
  - add oversampling parameter DONE
  - do more runs with capacitor in place IN PROGRESS
  - look at statistics class
- - organise button software into functions and/or object
- - look at voltages with oscilloscope
+ - organise button software into functions and/or object FUNCTIONS DONE
+ - look at voltages with oscilloscope DONE 10 Nov, see diary entry for that date
  - do calculations for calibration voltage error and fix design if necessary DONE, SEE BELOW
 
 Oversampling sample files:
@@ -139,13 +139,76 @@ The oversampling is not working. Each value, obtained with a run of successive m
 only produces many same values. Presumably the AtoD converter needs time to recover and 
 be able to start measuring again. 
 So I added a delay() in the oversampling loop. At least 10 ms seems to be required, even then the
-distributin has a "hole" in the centre between two code values. So maybe it needs to be a bit more. 
+distribution has a "hole" in the centre between two code values. So maybe it needs to be a bit more. 
 I will try 20 ms (and 50 ms?). The issue is that oversampling 64 times with a delay of 50 ms reuires 3.2 seconds!
 so there is a real limit to the improvement in accuracy obtainable by oversampling. 
 
-Another idea: make the object read the voltage every 20 (or 50?) ms and put it through
+Another idea: make the object read the voltage every 20 ms (or 50?) and put it through
 a filter. Then the function of reading the voltage just consists of reading the voltage variable. 
 Zero and Scale calibration need a bit more thought. 
 
+9 Nov 2017
+Implementation started. 
+Filter performance analysed in spreadsheet model. Looking at 4-stage filter with decay parameter of 8. 
+Resuslts looking promising with a single stage filter of 64 but it still needs more filtering. Results 22.
 
+10 Nov
+Running with multi-stage filter. Results still poor. 
+Looked at the breadboard with oscilloscope. There is a strong cyclic waveform on the power line coming out of the WeMos
+with a period of about 160 ms and a negative going pulse of about 400 mV. No wonder the voltage readings
+show anomalies. I believe this waveform is coming from the WeMos. It does it with a blank sketch loaded. There is no such waveform on the USB output from either my computer or a USB charger, but it is always there with the WeMos. 
+I concluded that I need to ignore meaasured values that are affected by this waveform. 
+Added logic to test the adc code and if it is more than 10 counts away from the current running average, then
+the reading is ignored. 
+Statistics distribution now looks much more symmetrical and does not have a long negative tail any more. 
+
+11 Nov 2017
+Added a serial.print line to show the range of values in each statistics report. 
+Commented out all but that line and started running it with different parameter settings. 
+100 ms repeat on the voltage object gives about 3 mV range, while 20ms repeat gives over 10 mV sometimes. 
+
+12 Nov 2017
+Trying 50 ms repeat. 
+
+17 Nov 2017
+After a few days away from this project, I think I should try to filter out the cyclic waveform from the voltage to be measured. Given the waveform has a period of about 160ms, ie 6 Hz, I need a filter with a critical frequency no more than 6 Hz, and preferably (maybe) 0.6 Hz. Fc = 1/(2PiRC) so RC should be 0.6/(2Pi)=0.1 seconds. If C= 100 uF (ie 10^-4F) and RC=0.1 then R=0.1*10^4 = 10^3 = 1000 ohms. 
+
+Using 1000 ohms in series with the existing voltage dividers would reduce the range of the measurements. Without the filter resistor, the voltage goes up to the rail, ie 5V nominally, about 4.7V in practice. Adding 1K would reduce this to 4.7*(10/11)=4.27 V. A 100 ohm resistor would change it to 4.7 * 10/10.1 = 4.65 V. 
+
+I will put in a 100 Ohm, 100 uF filter and see what the waveform looks like. 
+Schematic updated. DONE
+Hardware to be updated: ToDo
+
+23 Nov 2017
+Hardware updated using 109 ohm resistor and 100 uF capacitor. Waveform snapshots taken. Results look like this:
+ Power source      Filtering             Pulse amplitude
+  USB              None                  1.09 V
+  USB              100 uF C, no R        0.4  V
+  USB              100 uF, 109 R         0.04 V (40 mV)
+  Li Ion Cell      None                  0.125 V (125 mV)
+  Li Ion Cell      100 uF C, no R        0.120 V (120 mV)
+  Li Ion Cell      100 uF C, 109 R       0.008 V (8 mV)
+
+The pulse period remains at around 150 ms throughout, although there are a variety of pulse timings. Unfiltered pulses are a bit less than 1 ms (like, 0.9 ms) but the filtering decreases amplitude and increases duration, up to 8 ms.   
+
+So I think it is not very practical to fully get rid of the pulse waveform. The pulse waveform means that ADC results will always have a variability in them, depending on how the timing of the ADC sample vs the timing of the pulse waveform. If there is a single measurement, and it happens to be done at the time of a pulse, the result can be off by a whole 1V - which out of a 5V value is aa 20% error! 
+
+My software strategy is as follows:
+provide for 2 measurement modes:
+Mode 1: regular (frequent) measurements with exponential decay filtering and discard of measurements that are too far away from the current mean. readVoltage() delivers the latest filtered value. 
+Mode 2: no regular measurements. On command the ADC measures a number of times, discarding measurements too far away from the mean. 
+All parameters used in each mode will be controlled via API functions, with default values that should work for most users. 
+The same getVoltage() or readVoltage() function call will be used for both modes, with the difference determined by parameter setting. Eg readVoltage(0) will be used in mode1; readVoltage(1) will give a single measurement in mode 2. readVoltage(n) with n >1 will run for n milliseconds and will do the averaging and discarding within n milliseconds approximately. 
+Control parameters for mode 1 are:
+  interval between measurements (default: 20 ms)
+  exponential decay filter parameter (default 16, can be 1 up to 1024) (?) 
+  number of exponential decay filter stages (default 4, can be 1 up to 8).
+  discard criterion (0 for no discard; 1,2,3 etc for allowable distance from mean; default [4])
+  limit on multiple successive discards (default: 3)
+Control parameters for mode 2 are:
+  time allowed for measurement, ms (1 to 255 ms). 
+  discard criterion (same as for mode 1)
+  limit on multiple successive discards (only if needed, if it is then same as for mode 1)
+
+The limit on multiple successive discards is needed for Mode 1 because if the starting point is a long way from the usual reading, the process may never converge. This should not be a problem in mode 2 assuming the initial average is close to the final, and all readings have equal weight.  
 
