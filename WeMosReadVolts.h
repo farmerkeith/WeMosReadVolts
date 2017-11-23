@@ -1,5 +1,12 @@
 // File created 8 Nov 2017
 // This object is designed to be called on every loop
+// Major update 23 Nov 2017 for 2 modes of operation.
+// Mode 1: regular (frequent) measurements with exponential decay filtering and 
+// discard of measurements that are too far away from the current mean. 
+// readVoltage() delivers the latest filtered value. 
+// Mode 2: no regular measurements. On command the ADC measures a number of times, 
+// discarding measurements too far away from the mean. 
+
 
 class WeMosVolts {
   public:
@@ -12,28 +19,31 @@ class WeMosVolts {
   unsigned long getMilliVolts(long &temp1); // returns milli volts; parameter returns ADC code*oversampling
   void returnToNormal();
   // variables
-  unsigned long fullScale = 6158;  // mV, max 2^16-1
+  unsigned long fullScale = 6156;  // mV, max 2^16-1
+  
+  int taskPeriod = 20; // interval between measurements (default: 20 ms)
+  int filter = 16; // exponential decay filter parameter; 1 for no filtering (default 16, can be 1 up to 1024) (?) 
+  byte filterLevel = 4; // No. of filter stages in series; max is 4 (default 4, can be 1 up to 8).
+  int ignoreThreshold = 500; // adc Code * 100 :discard criterion (0 for no discard; 1,2,3 etc for allowable distance from mean; 
+  byte discardLimit=3; //  limit on multiple successive discards (default: 3)
+
   long zeroOffset=500; // ADC output code
   float zeroOffsetMin=1000; // ADC output code * oversampling
   float zeroOffsetMax=0; // ADC output code * oversampling
   float zeroOffsetExp=zeroOffset; // ADC output code * oversampling
   long milliVolts = 0;
-  int taskPeriod = 100;
   unsigned long voltsTime=0;
-  const int filter = 16; // exponential decay filter parameter; 1 for no filtering
-  const byte filterLevel = 4; // No. of filter stages in series; max is 4
   private:
-  void filterAdc();
+  void filterAdc(); // ToDo: make variable filter stages
   void printAdcLine();
-  const int ignoreThreshold = 500; // adc Code * 100
   unsigned long counter = 0, oldCounter = 0;
   unsigned long adcCode = 0;
-  unsigned long adcCodeArray[11];
-  unsigned long filteredAdcCode = 0;
+  unsigned long adcCodeArray[11]; // history of adc codes
+  unsigned long filteredAdcCode = 0; // ToDo: turn into array for variable filter stages
   unsigned long filteredAdcCodeC = 0;
   unsigned long filteredAdcCodeB = 0;
   unsigned long filteredAdcCodeA = 0;
-  enum voltState {
+  enum voltState { // state variable to manage zero and scale calibration
     voltState_normal,
     voltState_zero,
     voltState_scale
@@ -100,7 +110,8 @@ void WeMosVolts::run(){
     if (((adcCode-filteredAdcCode)<ignoreThreshold)||((filteredAdcCode-adcCode)<ignoreThreshold)) {
       filterAdc();
       
-    } else { // first reading after a good one will be ignored
+    } else { // first reading after a good one will be ignored 
+      // ToDo: make a parameter for discard limit
       if ((counter-oldCounter)>1){
         oldCounter = counter ;
 //        Serial.print(" discarding ");
@@ -155,7 +166,7 @@ void WeMosVolts::printAdcLine(){
 }
 
 // _____________________________
-void WeMosVolts::filterAdc(){
+void WeMosVolts::filterAdc(){ // ToDo: make variable from 1 to 8
 //  filteredAdcCode = adcCode; // unfiltered (for testing)
   
   filteredAdcCodeA = (filteredAdcCodeA * (filter-1) + adcCode)/filter;
@@ -205,6 +216,7 @@ float WeMosVolts::getVolts(){ // returns Volts
 
 unsigned long WeMosVolts::getMilliVolts(long &temp){ 
    // returns milli volts; parameter returns ADC code*oversampling
+   // ToDo: change parameter to control Mode 1 (==0) or Mode 2 (>0)
 /*   
    Serial.print(" object filteredAdcCode ");
    Serial.print(filteredAdcCode);

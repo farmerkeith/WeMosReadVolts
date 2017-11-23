@@ -1,5 +1,5 @@
 // test read Vcc
-// ADC_MODE(ADC_VCC); // use with ESP.getVcc()
+// ADC_MODE(ADC_VCC); // use with ESP.getVcc() not available with WeMos D1 mini pro
 // WeMos D1 mini pro has a resistive divider on board, nominal values are
 // Rhi = 220K Rlo = 100K. This will convert nominal range which is 1000 mV full scale to 
 // 3200 mV full scale, plus any variation due to resistor tolerances.
@@ -7,26 +7,38 @@
 // to get full scale of 5.9 V put a 270K resistor in series with A0. 
 // this is an example sketch to calibrate and read voltages
 // 1 Nov 2017 adding functions to use calibration pushbuttons calZero and calScale
-// 7 Nov 2017 
+// 2 - 23 Nov 2017 Added statistics collection; LEDs to show running status; 2 models of reading
 
 #include "WeMosReadVolts.h" // associated tab file
 #include "farmerkeith_LED.h" // tab file
 #include <Bounce2.h> // for debouncing switch inputs
 #include "wemosPinMap.h" // class (or namespace) for wemos pin names
 
+// configuration data
 const int USBVcc = 4685 ; // mV - supply voltage from USB
 const int arraySize = 200; // 32; // size of arrays for stats collection
-const int delayBetweenMeasurements = 200; // ms
-const unsigned int cyclePrintTrigger = 200; // print out stats
+const int delayBetweenMeasurements = 500; // ms
+const unsigned int cyclePrintTrigger = 20; // print out stats
   // once every No. of measurement cycles
 const int statsGroup = 1; // how many code values are grouped in one voltCode stats bin  
 // const byte oversampling = 2;
 // const long fullScale = 617371; // mV*100
+
+// Serial print controls
+const bool eachReading=1; // prints a line per reading if 1
+const bool statsMCountPrinting=0;
+const bool statsVoltagePrinting=0;
+const bool rangeVoltagePrinting=1;
+const bool meanVoltagePrinting=1;
+const bool initialisePrinting=1; // result of initialiseStats()
+
+// hardware configuration
 const byte calibrateZeroPin  = wemosPin.D7; // 13; // D7, normally LOW
 const byte calibrateScalePin = wemosPin.D2; // 4; // D2, normally HIGH
 const byte redVPin = wemosPin.D5; // 14; // set pin D5/GPIO14 for the red LED to Vcc
 const byte greenGPin = wemosPin.D6; // 12; // set pin D6/GPIO12 for the green LED to Ground
 
+// variables
 long baseCode = 0; // adc code, base for stats collection
 long baseVoltage = 0; // mV, corresponding to baseCode
 long baseMeasureTime = 0; // microseconds, base for stats collection
@@ -50,15 +62,16 @@ enum calState {
   calState_zero,
   calState_scale,
   calState_waitZero,
-  calState_waitScalethe Include Library 
+  calState_waitScale,
 } calState ;
 
+// instantiate objects
 LED ledV(redVPin, 1); // Vcc behind red LED
 LED ledG(greenGPin, 0); // Ground behind green LED
 // LED ledV(calibrateScalePin, 1); // Vcc behind red LED
 // Bounce calZero=Bounce(calibrateZeroPin, 10); // bounce object: pin, ms
-Bounce calZero(calibrateZeroPin, 10); // bounce object: pin, ms
-// Bounce calZero(); // bounce object: pin, ms
+Bounce calZero(calibrateZeroPin, 10); // bounce object: pin, ms // Note: this usage is deprecated
+// Bounce calZero(); // bounce object: pin, ms // note: trouble getting this to work!
 Bounce calScale(calibrateScalePin, 10); // bounce object: pin, ms
 
 void setup() {
@@ -89,7 +102,7 @@ void setup() {
 }
 
 void loop() {
-  WeMosVolts .run();
+  WeMosVolts.run();
   // check Zero calibration button
   calZero.update(); // update status of Bounce object for Zero button
   zeroButtonRun();

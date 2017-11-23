@@ -198,7 +198,7 @@ provide for 2 measurement modes:
 Mode 1: regular (frequent) measurements with exponential decay filtering and discard of measurements that are too far away from the current mean. readVoltage() delivers the latest filtered value. 
 Mode 2: no regular measurements. On command the ADC measures a number of times, discarding measurements too far away from the mean. 
 All parameters used in each mode will be controlled via API functions, with default values that should work for most users. 
-The same getVoltage() or readVoltage() function call will be used for both modes, with the difference determined by parameter setting. Eg readVoltage(0) will be used in mode1; readVoltage(1) will give a single measurement in mode 2. readVoltage(n) with n >1 will run for n milliseconds and will do the averaging and discarding within n milliseconds approximately. 
+The same getVoltage() or readVoltage() function call will be used for both modes, with the difference determined by parameter setting. Eg readVoltage(0) will be used in mode 1; readVoltage(1) will give a single measurement in mode 2. readVoltage(n) with n >1 will run for n milliseconds and will do the averaging and discarding within n milliseconds approximately. 
 Control parameters for mode 1 are:
   interval between measurements (default: 20 ms)
   exponential decay filter parameter (default 16, can be 1 up to 1024) (?) 

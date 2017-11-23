@@ -61,14 +61,15 @@ void initialiseStats(){
   if (baseVoltage<0) baseVoltage = 0;
   baseCode = (baseCode/8) -(arraySize*statsGroup / 2);
   if (baseCode<0) baseCode = 0;
-//  Serial.print("Base Voltage set to ");
-//  Serial.print(baseVoltage);
-//  Serial.print(" Base Code set to ");
-//  Serial.print(baseCode);
-//  Serial.print(" equivalent ");
-//  Serial.println((float)baseCode/oversampling);
-//  Serial.print(" lowMean, highMean and loHiBreak set to ");
-//  Serial.println((float)lowMean/100);
+  if (initialisePrinting){
+    Serial.println("Stats counters re-initialised");
+    Serial.print("Base Voltage set to ");
+    Serial.print(baseVoltage);
+    Serial.print(" Base Code set to ");
+    Serial.print(baseCode);
+    Serial.print(" lowMean, highMean and loHiBreak set to ");
+    Serial.println((float)lowMean/100);
+  }
   Serial.println();
 }
 
@@ -113,12 +114,16 @@ void printMeasureLine(){
     Serial.print (voltCode);
     Serial.print (" V ");
     Serial.print ((float)milliVolts/100,2);
-    Serial.print (" vC ");
+    Serial.print (" delta ");
     Serial.print ((long)(voltCode - baseCode));
-    int index1=0;
+    int index1=0, index2=0;
     index1 = (voltCode - baseCode)%50;
+    index2 = (voltCode - baseCode)/50;
     for (int i=0; i<index1; i++){
-      Serial.print ("*");
+      if(index2==4) Serial.print ("*");
+      else if(index2==3) Serial.print ("@");
+      else if(index2==5) Serial.print ("#");
+      else Serial.print (".");
     }
 //    Serial.print (" rawV ");
 //    Serial.print(rawVoltage);
@@ -151,10 +156,10 @@ void printMeasureLine(){
 
 // _______________________
 void printStats(){
-//  printMCountStats();
-//  printVoltageStats();
-  printVoltageRange();
-//  printMeanVoltage();
+  if (statsMCountPrinting)  printMCountStats();
+  if (statsVoltagePrinting) printVoltageStats();
+  if (rangeVoltagePrinting) printVoltageRange();
+  if (meanVoltagePrinting)  printMeanVoltage();
   
 } // end of void printStats()
 
@@ -264,17 +269,19 @@ void  readVoltageRun(){
 //    lowVoltage = lowMean ; // *fullScale/102400; // 11K : 11K
 //    highVoltage = highMean ; // *fullScale/102400; // 11K : 11K
 
-//    printMeasureLine();
+    if (eachReading) printMeasureLine(); 
 
     ledV.toggle();
     ledG.toggle();
 
     collectStats();
     
-    if (cycleCounter%cyclePrintTrigger==0){
-      printStats();
+//    if (statsPrinting){
 //      Serial.print  ("cycleCounter ");
 //      Serial.println(cycleCounter);
+//    }
+    if (cycleCounter%cyclePrintTrigger==0){
+      printStats();
       if ((taskTime/10000)%20==4){
         initialiseStats();
 //        Serial.println  ("stats initialised ");
@@ -337,12 +344,12 @@ void  scaleButtonRun(){
     if (ScaleButton==LOW) { // button pressed
       Serial.println ("\nScale calibration button pressed");
       calState = calState_waitScale;
-//      printStats();
+      printStats();
       delay(50);
-      WeMosVolts .calibrateScale(USBVcc);
+      WeMosVolts.calibrateScale(USBVcc);
       Serial.print (" Scale calibration done");
       Serial.print (" fullScale=");
-      Serial.println (WeMosVolts .fullScale);
+      Serial.println (WeMosVolts.fullScale);
       initialiseStats();
     } 
   }
