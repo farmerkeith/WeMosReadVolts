@@ -3,18 +3,22 @@
 // _______________________
 void collectStats(){
 // accumulate totals for averages  
-  rawVoltageMean += milliVolts;
+  rawVoltageMean += milliVoltsG;
   voltCodeMean += voltCode;
-  if (milliVolts<lowVoltage) lowVoltage=milliVolts;
-  if (milliVolts>highVoltage) highVoltage=milliVolts;
+  if (milliVoltsG<lowVoltage) lowVoltage=milliVoltsG;
+  if (milliVoltsG>highVoltage) highVoltage=milliVoltsG;
   
 // collect voltCode statistics
-  int index = (voltCode-baseCode)/statsGroup; 
-//  int index = milliVolts-baseVoltage;
+//  int index = (voltCode-baseCode)/statsGroup; 
+  
+// collect voltage statistics
+  int index = ((long)(milliVoltsG-baseVoltage))/statsGroup;
+//  Serial.print ("Stats index= ");
+//  Serial.println (index);
   if (index <0) index = 0;
   if (index > arraySize-1) index = arraySize-1;
   value[index]++;
-  mVForCode[index] = milliVolts;
+  mVForCode[index] = milliVoltsG;
 // mCount statistics
 //  index = mCount;
 //  if (index > arraySize-1) index = arraySize-1;
@@ -41,16 +45,20 @@ void initialiseStats(){
     mVForCode[i]=0;
   }
   for (int i=0; i<8; i++){
-    milliVolts = readVoltage(voltCode, mCount, measureTime);
+    milliVoltsG = readVoltage(voltCode, mCount, measureTime);
 //    int tempVoltage = analogRead(A0);
+//    Serial.print(" initialising, measured milliVolts ");
+//    Serial.println(milliVoltsG);
     baseCode += voltCode;
-    baseVoltage += milliVolts; // getting a base value for stats collection
+    baseVoltage += milliVoltsG; // getting a base value for stats collection
     baseMeasureTime += measureTime;     
 //    delay(1);
   }
 
 //  Serial.print(" measured Volt Code ");
 //  Serial.println(baseCode/8);
+  Serial.print(" measured milliVolts ");
+  Serial.println((float)baseVoltage/800);
 
   baseVoltage = baseVoltage/8;
   baseMeasureTime = baseMeasureTime/8 - arraySize/4;
@@ -113,16 +121,34 @@ void printMeasureLine(){
     Serial.print (" voltCode ");
     Serial.print (voltCode);
     Serial.print (" V ");
-    Serial.print ((float)milliVolts/100,2);
+    Serial.print ((float)milliVoltsG/100,2);
     Serial.print (" delta ");
-    Serial.print ((long)(voltCode - baseCode));
+    if (milliVoltsG > baseVoltage) Serial.print(" ");
+    if (milliVoltsG+1000 > baseVoltage) Serial.print(" ");
+    if (milliVoltsG-1000 < baseVoltage) Serial.print(" ");
+    Serial.print ((float)((long)(milliVoltsG - baseVoltage))/100);
+    
+//    Serial.print("  ");
+//    Serial.print((long)(milliVolts - baseVoltage));
+//    Serial.print ((long)(voltCode - baseCode));
     int index1=0, index2=0;
-    index1 = (voltCode - baseCode)%50;
-    index2 = (voltCode - baseCode)/50;
-    for (int i=0; i<index1; i++){
+    index1 = ((long)(milliVoltsG - baseVoltage)/100)%50;
+    index2 = ((long)(milliVoltsG - baseVoltage)/100)/50;
+//    index1 = (voltCode - baseCode)%50;
+//    index2 = (voltCode - baseCode)/50;
+//    Serial.print (" ");
+//    Serial.print (index1);
+
+
+    Serial.print (" ");
+    for (int i=0; i<index1+25; i++){
       if(index2==4) Serial.print ("*");
       else if(index2==3) Serial.print ("@");
       else if(index2==5) Serial.print ("#");
+      else if(index2==1) Serial.print ("$");
+      else if(index2==0) Serial.print ("&");
+      else if(index2==-1) Serial.print ("+");
+      else if(index2==2) Serial.print ("^");
       else Serial.print (".");
     }
 //    Serial.print (" rawV ");
@@ -160,14 +186,29 @@ void printStats(){
   if (statsVoltagePrinting) printVoltageStats();
   if (rangeVoltagePrinting) printVoltageRange();
   if (meanVoltagePrinting)  printMeanVoltage();
+  if (configurationPrinting) printConfiguration();
   
 } // end of void printStats()
+
+void printConfiguration(){
+  Serial.print("WeMosVolts config:");
+  Serial.print (" taskPeriod "); Serial.print(WeMosVolts.taskPeriod);
+  Serial.print (" filter "); Serial.print(WeMosVolts.filter);
+  Serial.print (" filterLevel "); Serial.print(WeMosVolts.filterLevel);
+  Serial.print (" ignoreThreshold "); Serial.print(WeMosVolts.ignoreThreshold);
+  Serial.print (" timeAllowed "); Serial.println(WeMosVolts.timeAllowed);
+
+}
 
 // _______________________
 void  printVoltageStats(){
   Serial.println("\nVoltage stats");
   Serial.print("baseCode ");
-  Serial.println(baseCode);
+  Serial.print(baseCode);
+  Serial.print(" baseVoltage ");
+  Serial.print((float)baseVoltage/100);
+  Serial.print(" maxVoltage ");
+  Serial.println((float)(baseVoltage+(arraySize-1)*statsGroup)/100);
   
   Serial.println ("VCode    mV   Count  % Graphical");
   
@@ -179,8 +220,10 @@ void  printVoltageStats(){
   for (int i=0; i<arraySize; i++){
     if(value[i]!=0||value[i-1]!=0||value[i+1]!=0){
 //      Serial.print("VCode ");
-      if (baseCode+i<100) Serial.print(" "); // formatting
-      Serial.print (baseCode+i*statsGroup); 
+      if (baseVoltage+i<100) Serial.print(" "); // formatting
+//      if (baseCode+i<100) Serial.print(" "); // formatting
+      Serial.print (baseVoltage+i*statsGroup); 
+//      Serial.print (baseCode+i*statsGroup); 
 //      Serial.print(" ");
 //      Serial.print ((float)(baseCode+i)/oversampling,2);
       Serial.print(" ");
@@ -243,7 +286,9 @@ float readVoltage(long &_voltCode, int &_mCount, unsigned long &_measureTime){
 //  for(_mCount=0; _mCount<20; _mCount++) {
     _measureTime = micros();
 //    _rawVoltage = analogRead(A0); // for testing
-    _milliVolts = WeMosVolts .getMilliVolts(_voltCode) ; // used
+    _milliVolts = WeMosVolts.getMilliVolts(timeAllowedG) ;
+//    Serial.println ("just got milli volts Functions line 290");
+    _voltCode = WeMosVolts.getVoltCode(timeAllowedG) ;
     _measureTime = micros() - _measureTime;
 //    if (_measureTime<80) break;
 //    delay(50);
@@ -257,8 +302,7 @@ void  readVoltageRun(){
   if ((long)(millis() - taskTime)>=0){ 
     taskTime += delayBetweenMeasurements; // set next execution time
     cycleCounter ++;
-    milliVolts = readVoltage(voltCode, mCount, measureTime);
-
+    milliVoltsG = readVoltage(voltCode, mCount, measureTime);
 //    // separate Low and High groups and generate filtered means
 //    loHiBreak = loHiBreak*(filter-1)/filter+ 100*milliVolts/filter;
 //    if (milliVolts - loHiBreak/100<0){
@@ -269,7 +313,9 @@ void  readVoltageRun(){
 //    lowVoltage = lowMean ; // *fullScale/102400; // 11K : 11K
 //    highVoltage = highMean ; // *fullScale/102400; // 11K : 11K
 
-    if (eachReading) printMeasureLine(); 
+    if (eachReading){
+      if (cycleCounter%eachReading==0) printMeasureLine(); 
+    }
 
     ledV.toggle();
     ledG.toggle();
@@ -282,12 +328,27 @@ void  readVoltageRun(){
 //    }
     if (cycleCounter%cyclePrintTrigger==0){
       printStats();
-      if ((taskTime/10000)%20==4){
-        initialiseStats();
-//        Serial.println  ("stats initialised ");
+      Serial.print (" cycleCounter%(cyclePrintTrigger*initialiseTrigger)= ");
+      Serial.print (cycleCounter%(cyclePrintTrigger*initialiseTrigger));
+      Serial.print (" will re-initialise at ");
+      Serial.println (cyclePrintTrigger*initialiseTrigger);
+      if (initialiseTrigger){
+        if (cycleCounter%(cyclePrintTrigger*initialiseTrigger)==0){
+          initialiseStats();
+          filterG++; 
+          if (filterG==11){ 
+            filterG=0;
+            filterLevelG++;
+            if (filterLevelG==9) filterLevelG=1;
+          }
+          WeMosVolts.filter=filterG; // exponential decay digital filter parameter (Mode 1)
+          WeMosVolts.filterLevel = filterLevelG ; // No. of filter stages in series (max is 8) (Mode 1)
+          Serial.print("filtering updated, filter=");
+          Serial.print(filterG);
+          Serial.print(" filter Level=");
+          Serial.println(filterLevelG);
+        }
       }
-//      Serial.print  ("(taskTime/10000)%20 ");
-//      Serial.println((taskTime/10000)%20);
     }
   }
 }
@@ -321,7 +382,7 @@ void zeroButtonRun(){
   }
   if (calState == calState_waitZero){
     if (ZeroButton==HIGH) { // button pressed
-      if (WeMosVolts .milliVolts <0) WeMosVolts .calibrateZero(); // re-calibrate
+      if (WeMosVolts.milliVolts <0) WeMosVolts .calibrateZero(); // re-calibrate
     }
     if (ZeroButton==LOW) { // button released 
       Serial.println ("\nZero calibration button released");
